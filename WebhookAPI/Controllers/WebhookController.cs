@@ -1,5 +1,6 @@
 using System.Threading.Channels;
 using Microsoft.AspNetCore.Mvc;
+using WebhookAPI.Data;
 using WebhookAPI.Dtos;
 
 namespace WebhookAPI.Controllers;
@@ -8,13 +9,20 @@ namespace WebhookAPI.Controllers;
 [ApiController]
 public class WebhookController : ControllerBase
 {
+    private readonly WebhookDbContext _context;
+
+    public WebhookController(WebhookDbContext context)
+    {
+        _context = context;
+    }
+
     [HttpPost("Notifications")]
     public async Task<IActionResult> Notifications(
         [FromServices] Channel<WebHookInfoDto> channel,
         [FromBody] WebHookInfoDto body
     )
     {
-        Console.WriteLine("Webhook received {0}, {1}", body.Date, body.Json);
+        if (!await _context.Database.CanConnectAsync()) return BadRequest("Cannot connect to database");
 
         await channel.Writer.WriteAsync(body);
 
